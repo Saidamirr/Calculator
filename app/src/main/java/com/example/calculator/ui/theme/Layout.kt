@@ -1,5 +1,7 @@
 package com.example.calculator.ui.theme
+import android.util.Size
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.util.Stack
@@ -26,18 +29,26 @@ fun ButtonModel(
     modifier: Modifier = Modifier,
     label: String,
     action: () -> Unit,
-    color: Color
+    color: Color,
+    size: FontSize
 ) {
     Button(
         onClick = action,
         colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
         modifier = modifier
             .background(Color.Black)
+            .border(0.1.dp, Color(43,43,43))
     ) {
         Text(text = "$label",
             color = color,
-            fontSize = 25.sp)
+            fontSize = size.value)
     }
+}
+
+enum class FontSize(val value: TextUnit) {
+    SMALL(20.sp),
+    NORMAL(30.sp),
+    BIG(40.sp)
 }
 
 @Composable
@@ -47,26 +58,43 @@ fun layout () {
     }
 
     val buttons = listOf(
-        ButtonInstance("AC", { inputString = ""}, ButtonColor.ACTION.value),
-        ButtonInstance("←", { inputString = inputString.dropLast(1)}, ButtonColor.ACTION.value),
-        ButtonInstance("%", {}, ButtonColor.ACTION.value),
-        ButtonInstance("÷", { inputString += "÷" }, ButtonColor.ACTION.value),
-        ButtonInstance("7", { inputString += "7" }, ButtonColor.NUMBER.value),
-        ButtonInstance("8", { inputString += "8" }, ButtonColor.NUMBER.value),
-        ButtonInstance("9", { inputString += "9" }, ButtonColor.NUMBER.value),
-        ButtonInstance("×", { inputString += "×" }, ButtonColor.ACTION.value),
-        ButtonInstance("4", { inputString += "4" }, ButtonColor.NUMBER.value),
-        ButtonInstance("5", { inputString += "5" }, ButtonColor.NUMBER.value),
-        ButtonInstance("6", { inputString += "6" }, ButtonColor.NUMBER.value),
-        ButtonInstance("—", { inputString += "—" }, ButtonColor.ACTION.value),
-        ButtonInstance("1", { inputString += "1" }, ButtonColor.NUMBER.value),
-        ButtonInstance("2", { inputString += "2" }, ButtonColor.NUMBER.value),
-        ButtonInstance("3", { inputString += "3" }, ButtonColor.NUMBER.value),
-        ButtonInstance("+", { inputString += "+" }, ButtonColor.ACTION.value),
-        ButtonInstance(" ", {}, ButtonColor.NUMBER.value),
-        ButtonInstance("0", { inputString += "0" }, ButtonColor.NUMBER.value),
-        ButtonInstance(".", { inputString += "." }, ButtonColor.NUMBER.value),
-        ButtonInstance("=", { inputString = solve(inputString).toString()}, ButtonColor.ACTION.value),
+        ButtonInstance("AC", { inputString = ""}, ButtonColor.ACTION.value, FontSize.SMALL),
+        ButtonInstance("←", { inputString = inputString.dropLast(1)}, ButtonColor.ACTION.value, FontSize.BIG),
+        ButtonInstance("%", {}, ButtonColor.ACTION.value, FontSize.NORMAL),
+        ButtonInstance("÷", {
+            try{
+                if(isLastOperator(inputString)) inputString = inputString.dropLast(1)
+                if(inputString.isNotEmpty()) inputString += "÷"
+            } catch (e: Exception) {
+                println("Ошибка: ${e.message}")
+            }
+
+                            }, ButtonColor.ACTION.value, FontSize.NORMAL),
+        ButtonInstance("7", { inputString += "7" }, ButtonColor.NUMBER.value, FontSize.NORMAL),
+        ButtonInstance("8", { inputString += "8" }, ButtonColor.NUMBER.value, FontSize.NORMAL),
+        ButtonInstance("9", { inputString += "9" }, ButtonColor.NUMBER.value, FontSize.NORMAL),
+        ButtonInstance("×", {
+            if(isLastOperator(inputString)) inputString = inputString.dropLast(1)
+            if(inputString.isNotEmpty()) inputString += "×"
+                            }, ButtonColor.ACTION.value, FontSize.NORMAL),
+        ButtonInstance("4", { inputString += "4" }, ButtonColor.NUMBER.value, FontSize.NORMAL),
+        ButtonInstance("5", { inputString += "5" }, ButtonColor.NUMBER.value, FontSize.NORMAL),
+        ButtonInstance("6", { inputString += "6" }, ButtonColor.NUMBER.value, FontSize.NORMAL),
+        ButtonInstance("—", {
+            if(isLastOperator(inputString)) inputString = inputString.dropLast(1)
+            if(inputString.isNotEmpty()) inputString += "—"
+                            }, ButtonColor.ACTION.value, FontSize.NORMAL),
+        ButtonInstance("1", { inputString += "1" }, ButtonColor.NUMBER.value, FontSize.NORMAL),
+        ButtonInstance("2", { inputString += "2" }, ButtonColor.NUMBER.value, FontSize.NORMAL),
+        ButtonInstance("3", { inputString += "3" }, ButtonColor.NUMBER.value, FontSize.NORMAL),
+        ButtonInstance("+", {
+            if(isLastOperator(inputString)) inputString = inputString.dropLast(1)
+            if(inputString.isNotEmpty()) inputString += "+"
+                            }, ButtonColor.ACTION.value, FontSize.NORMAL),
+        ButtonInstance(" ", { inputString = "Не используй калькулятор, баран"}, ButtonColor.NUMBER.value, FontSize.NORMAL),
+        ButtonInstance("0", { inputString += "0" }, ButtonColor.NUMBER.value, FontSize.NORMAL),
+        ButtonInstance(".", { inputString += "." }, ButtonColor.NUMBER.value, FontSize.NORMAL),
+        ButtonInstance("=", { inputString = solve(inputString).toString()}, ButtonColor.ACTION.value, FontSize.NORMAL),
     )
     Column(
         modifier = Modifier
@@ -120,14 +148,21 @@ fun layout () {
     }
 }
 
+fun isLastOperator(str: String): Boolean {
+    if( str.isNotEmpty() && Operation.makeOperator(str[str.length-1]).value != null ) return true
+    else return false
+}
+
+
 class ButtonInstance (
     val label: String,
     val action: () -> Unit,
-    val color: Color
+    val color: Color,
+    val size: FontSize
 )
 
 enum class ButtonColor (val value: Color) {
-    ACTION(Color.Yellow),
+    ACTION(Color(235,76,66)),
     NUMBER(Color.White)
 }
 
@@ -147,7 +182,8 @@ fun ButtonsRow(
                     .fillMaxHeight(),
                 label = buttons[i].label,
                 action = buttons[i].action,
-                color = buttons[i].color)
+                color = buttons[i].color,
+                size = buttons[i].size)
         }
     }
 }
@@ -156,6 +192,7 @@ fun solve(input: String): Number {
     val regex = Regex("([—+×÷])|([0-9]+\\.?[0-9]*)")
     val numberStack = Stack<Number>()
     val operatorStack = Stack<Operation>()
+    var lastWasOperator = false
 
     val matches = regex.findAll(input)
 
@@ -177,6 +214,7 @@ fun solve(input: String): Number {
 
                 // Добавляем текущий оператор в стек
                 operatorStack.push(currentOperator)
+                lastWasOperator = true
             } else {
                 // Добавляем число в стек
                 if (value.contains(".")) {
@@ -184,6 +222,7 @@ fun solve(input: String): Number {
                 } else {
                     numberStack.push(value.toInt())
                 }
+                lastWasOperator = false
             }
         }
 
@@ -219,7 +258,7 @@ fun calculate(num1: Float, num2: Float, operation: Operation): Float {
 }
 
 class Operation() {
-    var value: Char = ' '
+    var value: Char? = ' '
         private set
     var priority = 0
         private set
@@ -245,6 +284,7 @@ class Operation() {
                     result.value = '/'
                     result.priority = 2
                 }
+                else -> result.value = null
             }
             return result
         }
